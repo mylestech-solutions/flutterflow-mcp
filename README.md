@@ -32,6 +32,15 @@ You need an **MCP-compatible editor** — at least one of:
 
 ## Setup (Fresh Install)
 
+### TL;DR (5 commands)
+
+```bash
+git clone https://github.com/mylestech-solutions/flutterflow-mcp.git
+cd flutterflow-mcp && git checkout beast-mode
+npm install && npm run build
+# Then add the MCP config to your editor (see step 3 below)
+```
+
 ### 1) Clone and Build
 
 ```bash
@@ -41,6 +50,11 @@ git checkout beast-mode
 npm install
 npm run build
 ```
+
+> **Windows/Linux note**: `better-sqlite3` is a native module. If `npm install` fails, you may need:
+> - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+> - **Windows**: `npm install --global windows-build-tools` or install Visual Studio Build Tools + Python 3
+> - **Linux**: `sudo apt-get install build-essential python3` (Debian/Ubuntu)
 
 ### 2) Get Your FlutterFlow API Token
 
@@ -484,6 +498,19 @@ npm run build
 npm test
 npm start
 ```
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| `npm install` fails on `better-sqlite3` | Install C++ build tools (see step 1 above) |
+| `Cannot find module './dist/main.js'` | Run `npm run build` first |
+| `orbit` tool not showing in editor | Restart the editor after adding MCP config |
+| `FLUTTERFLOW_API_TOKEN` missing error | Check your `.mcp.json` env vars — token must be set |
+| FlutterFlow 429 rate limit errors | Wait 2-3 minutes, then retry. Set `FLUTTERFLOW_API_MIN_INTERVAL_MS=2000` for slower requests |
+| `SQLITE_CANTOPEN` error | The `.orbit/` directory is auto-created. Check write permissions in your working directory |
+| Port 8080 already in use | Set `ORBIT_HTTP_ENABLED=0` in env (recommended for MCP-only use) |
+| Snapshot takes too long | First sync downloads all project files (can be 10k+). Subsequent syncs are incremental |
 
 ## Security Notes
 

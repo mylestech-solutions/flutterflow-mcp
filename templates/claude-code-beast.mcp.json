@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "flutterflow-orbit": {
+      "command": "node",
+      "args": ["/absolute/path/to/flutterflow-mcp/dist/main.js"],
+      "env": {
+        "FLUTTERFLOW_API_TOKEN": "YOUR_TOKEN_HERE",
+        "FLUTTERFLOW_API_MIN_INTERVAL_MS": "1000",
+        "ORBIT_POLICY_SAFE_MODE": "fullWrite",
+        "ORBIT_ALLOW_POLICY_WRITE": "1",
+        "ORBIT_HTTP_ENABLED": "0"
+      }
+    }
+  }
+}
