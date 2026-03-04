@@ -1,6 +1,149 @@
-# flutterflow-mcp
+# flutterflow-mcp (Beast Mode)
 
-`flutterflow-mcp` is an original FlutterFlow MCP server built around a command-palette model.
+`flutterflow-mcp` is a FlutterFlow MCP server built around a command-palette model — forked and enhanced with **beast mode** for full custom code access and unrestricted editing.
+
+## Prerequisites
+
+### Required
+
+| Requirement | Version | Check |
+|---|---|---|
+| **Node.js** | 18+ (tested on 24.x) | `node --version` |
+| **npm** | 9+ | `npm --version` |
+| **Git** | Any recent | `git --version` |
+| **FlutterFlow API Token** | v2 token from your FF account | [FlutterFlow Settings → API Tokens](https://app.flutterflow.io/) |
+
+### Required for AI Editor Integration
+
+You need an **MCP-compatible editor** — at least one of:
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (CLI)
+- [Claude Desktop](https://claude.ai/download)
+- [Cursor](https://cursor.sh/)
+- [Windsurf](https://codeium.com/windsurf)
+- [Codex](https://github.com/openai/codex) (CLI/App)
+
+### Optional
+
+- **FlutterFlow project** to test against (any project your API token can access)
+- **Fly.io account** for remote deployment
+
+---
+
+## Setup (Fresh Install)
+
+### 1) Clone and Build
+
+```bash
+git clone https://github.com/mylestech-solutions/flutterflow-mcp.git
+cd flutterflow-mcp
+git checkout beast-mode
+npm install
+npm run build
+```
+
+### 2) Get Your FlutterFlow API Token
+
+1. Log in to [FlutterFlow](https://app.flutterflow.io/)
+2. Go to **Settings → API Tokens**
+3. Create or copy your token
+
+### 3) Configure Your Editor
+
+Pick your editor below and add the MCP server config.
+
+#### Claude Code (`.mcp.json` in your project root)
+
+Create or edit `.mcp.json` in the root of the project you want to use Orbit from:
+
+```json
+{
+  "mcpServers": {
+    "flutterflow-orbit": {
+      "command": "node",
+      "args": ["/absolute/path/to/flutterflow-mcp/dist/main.js"],
+      "env": {
+        "FLUTTERFLOW_API_TOKEN": "YOUR_TOKEN_HERE",
+        "FLUTTERFLOW_API_MIN_INTERVAL_MS": "1000",
+        "ORBIT_POLICY_SAFE_MODE": "fullWrite",
+        "ORBIT_ALLOW_POLICY_WRITE": "1",
+        "ORBIT_HTTP_ENABLED": "0"
+      }
+    }
+  }
+}
+```
+
+Or add via CLI:
+
+```bash
+claude mcp add -s project \
+  -e FLUTTERFLOW_API_TOKEN=YOUR_TOKEN \
+  -e FLUTTERFLOW_API_MIN_INTERVAL_MS=1000 \
+  -e ORBIT_POLICY_SAFE_MODE=fullWrite \
+  -e ORBIT_ALLOW_POLICY_WRITE=1 \
+  -e ORBIT_HTTP_ENABLED=0 \
+  flutterflow-orbit -- node /absolute/path/to/flutterflow-mcp/dist/main.js
+```
+
+#### Cursor / Windsurf / Claude Desktop
+
+Add to your MCP settings (usually `~/.cursor/mcp.json` or equivalent):
+
+```json
+{
+  "mcpServers": {
+    "flutterflow-orbit": {
+      "command": "node",
+      "args": ["/absolute/path/to/flutterflow-mcp/dist/main.js"],
+      "env": {
+        "FLUTTERFLOW_API_TOKEN": "YOUR_TOKEN_HERE",
+        "FLUTTERFLOW_API_MIN_INTERVAL_MS": "1000",
+        "ORBIT_POLICY_SAFE_MODE": "fullWrite",
+        "ORBIT_ALLOW_POLICY_WRITE": "1",
+        "ORBIT_HTTP_ENABLED": "0"
+      }
+    }
+  }
+}
+```
+
+#### Codex (CLI / App)
+
+```bash
+codex mcp add flutterflow-orbit \
+  --env FLUTTERFLOW_API_TOKEN=YOUR_TOKEN \
+  --env ORBIT_POLICY_SAFE_MODE=fullWrite \
+  --env ORBIT_ALLOW_POLICY_WRITE=1 \
+  -- node /absolute/path/to/flutterflow-mcp/dist/main.js
+```
+
+### 4) Verify
+
+Restart your editor, then test:
+
+```
+orbit({ cmd: "help" })
+orbit({ cmd: "api.capabilities" })
+```
+
+If both return `ok: true`, you're good.
+
+---
+
+## Beast Mode (This Fork)
+
+This fork removes hard-coded restrictions from the upstream Orbit server:
+
+| Change | What It Does |
+|---|---|
+| **Custom code unlocked** | `lib/custom_code/`, `lib/custom_functions/`, `lib/main.dart` are now editable |
+| **Risk score reduced** | Custom code edits score +5 (awareness) instead of +40 (blocking) |
+| **Default policy: fullWrite** | No file deny prefixes, 500 files/apply, 50k lines max, platform config edits enabled |
+
+The `orbit.policy.json` file ships with beast mode defaults. You can tighten it for production use.
+
+---
 
 ## What Orbit Is
 
@@ -295,6 +438,31 @@ Env overrides:
 - `ORBIT_POLICY_SAFE_MODE`
 - `ORBIT_ALLOW_POLICY_WRITE=1` (to enable `orbit_policy_set`)
 
+## Running Tests
+
+### Unit Tests
+
+```bash
+npm test
+```
+
+100/101 tests pass (1 pre-existing mock timing issue).
+
+### Integration Tests
+
+The integration test script tests against a live FlutterFlow project:
+
+```bash
+# Edit PROJECT_ID in run-tests.mjs if using a different project
+node run-tests.mjs
+```
+
+This tests: help, api.capabilities, intent.run, schema.search, policy, API connection, snapshot creation, page listing, search, graph navigation, and project summary.
+
+> **Note**: FlutterFlow's API has aggressive rate limiting. If you get 429 errors, wait 2-3 minutes and retry.
+
+---
+
 ## Fly.io Deployment
 
 ```bash
@@ -322,7 +490,7 @@ npm start
 - Keep `FLUTTERFLOW_API_TOKEN` only in environment variables or secret managers.
 - Snapshot DB can include full project YAML and should be treated as sensitive data.
 - `orbit.policy.json` should be code-reviewed because it controls write boundaries.
-- Built-in read-only guards deny direct apply for custom code and unlocked `lib/main.dart`.
+- **Beast mode**: Custom code guards are removed. If you need read-only guards, set `safeMode` to `guidedWrite` or `readOnly` in `orbit.policy.json`.
 
 ## FlutterFlow Project APIs Coverage
 
