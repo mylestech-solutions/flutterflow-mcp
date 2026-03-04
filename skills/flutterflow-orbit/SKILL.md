@@ -137,12 +137,30 @@ This server has custom code editing unlocked:
 - Policy: fullWrite, 500 files/apply, 50k lines, platform config edits enabled
 - Risk score for custom code: +5 (awareness only, not blocking)
 
+## MANDATORY Rules (Rate Limit Prevention)
+
+1. **Always start sessions with ensureFresh, NOT refresh or create**:
+   `orbit({ cmd: "snapshots.ensureFresh", args: { staleMinutes: 30 } })`
+
+2. **NEVER use `apply: true` on individual edits** — batch into one changeset:
+   `changeset.new` → `changeset.add` (all edits) → `changeset.preview` → `changeset.validate` → `changeset.apply`
+
+3. **Use broad search, not one-by-one lookups**:
+   - `widgets.find` / `widgets.findText` / `search` for bulk discovery
+   - `summarize.page` for overview before deep-diving
+   - Do NOT call `tree.locate` or `widget.get` repeatedly for the same page
+
+4. **Know which commands hit the API vs local SQLite**:
+   - API calls: `snapshots.create/refresh/refreshSlow/ensureFresh(if stale)`, `changeset.apply/applySafe`, `projects.list`
+   - Local (free): `pages.list`, `widgets.*`, `search`, `graph.*`, `summarize.*`, `schema.*`, `tree.*`, `changeset.new/add/preview/validate`, `help`, `intent.run`
+
+5. **For known YAML changes** — use `mcp__flutterflow__update_project_yaml` directly to bypass overhead
+
 ## Safety Rules
 
 - Always use `changeset.preview` before `changeset.apply`
 - Always pass `confirm: true` to apply/rollback
 - Use `page.preflightDelete` before `page.remove`
-- Use `snapshots.ensureFresh` before sensitive writes
 - If getting 429 errors, wait 2-3 minutes or use `snapshots.refreshSlow`
 
 ## High-ROI Recipes
