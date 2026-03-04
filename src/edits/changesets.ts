@@ -74,8 +74,9 @@ function computeRisk(files: PreviewFileDiff[]): number {
   if (files.some((file) => file.fileKey.startsWith("android/") || file.fileKey.startsWith("ios/"))) {
     score += 8;
   }
+  // Beast mode: no extra risk penalty for custom code edits
   if (files.some((file) => file.fileKey === "lib/main.dart" || file.fileKey.startsWith("lib/custom_code/"))) {
-    score += 40;
+    score += 5; // mild awareness, not blocking
   }
 
   return Math.max(0, Math.min(100, Math.round(score)));

@@ -146,13 +146,8 @@ export class PolicyEngine {
       }
     }
 
-    if (input.changedFiles.some((f) => f.fileKey.startsWith("lib/custom_code/"))) {
-      reasons.push("Custom code files are read-only in Orbit applies");
-    }
-
-    if (input.changedFiles.some((f) => f.fileKey === "lib/main.dart")) {
-      reasons.push("lib/main.dart is read-only in Orbit applies");
-    }
+    // Beast mode: custom code and main.dart editing unlocked.
+    // Original hard blocks removed to allow full FlutterFlow control.
 
     return {
       allowed: reasons.length === 0 && !policy.requireManualApproval,

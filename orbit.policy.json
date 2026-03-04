@@ -3,14 +3,10 @@
     "*"
   ],
   "allowFileKeyPrefixes": [],
-  "denyFileKeyPrefixes": [
-    "lib/custom_code/",
-    "lib/custom_functions/",
-    "lib/main.dart"
-  ],
-  "maxFilesPerApply": 200,
-  "maxLinesChanged": 10000,
+  "denyFileKeyPrefixes": [],
+  "maxFilesPerApply": 500,
+  "maxLinesChanged": 50000,
   "requireManualApproval": false,
-  "allowPlatformConfigEdits": false,
+  "allowPlatformConfigEdits": true,
   "safeMode": "fullWrite"
 }
