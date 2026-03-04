@@ -118,7 +118,7 @@ export class SnapshotRepo {
   }
 
   listFiles(snapshotId: string, prefix?: string, limit = 100): SnapshotFile[] {
-    const effectiveLimit = Math.max(1, Math.min(limit, 10_000));
+    const effectiveLimit = Math.max(1, Math.min(limit, 15_000));
 
     let rows: SnapshotFileRow[];
     if (prefix) {
@@ -163,6 +163,26 @@ export class SnapshotRepo {
       .get(snapshotId, fileKey) as SnapshotFileRow | undefined;
 
     return row ? this.mapSnapshotFile(row) : undefined;
+  }
+
+  getFiles(snapshotId: string, fileKeys: string[]): Map<string, SnapshotFile> {
+    if (fileKeys.length === 0) {
+      return new Map();
+    }
+    const placeholders = fileKeys.map(() => "?").join(",");
+    const rows = this.db
+      .prepare(
+        `SELECT snapshot_id, file_key, yaml, sha256, updated_at
+         FROM snapshot_files
+         WHERE snapshot_id = ? AND file_key IN (${placeholders})`
+      )
+      .all(snapshotId, ...fileKeys) as SnapshotFileRow[];
+
+    const result = new Map<string, SnapshotFile>();
+    for (const row of rows) {
+      result.set(row.file_key, this.mapSnapshotFile(row));
+    }
+    return result;
   }
 
   listFileHashes(snapshotId: string): Array<{ fileKey: string; sha256: string }> {

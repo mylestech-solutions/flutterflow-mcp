@@ -2052,14 +2052,20 @@ export class OrbitCommandPalette {
 
           const warnings: string[] = [];
           if (preferredKeys.size > 0) {
-            for (const key of preferredKeys) {
-              if (!collected.has(key)) {
-                try {
+            const missingKeys = [...preferredKeys].filter((key) => !collected.has(key));
+            if (missingKeys.length > 0) {
+              const results = await Promise.allSettled(
+                missingKeys.map(async (key) => {
                   const yaml = await this.adapter.fetchFile(projectId, key);
-                  collected.set(key, yaml);
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : String(error);
-                  warnings.push(`Failed to fetch '${key}': ${message}`);
+                  return { key, yaml };
+                })
+              );
+              for (const result of results) {
+                if (result.status === "fulfilled") {
+                  collected.set(result.value.key, result.value.yaml);
+                } else {
+                  const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
+                  warnings.push(`Failed to fetch: ${message}`);
                 }
               }
             }
@@ -2372,7 +2378,7 @@ export class OrbitCommandPalette {
           const scope = strArg(args, "scope", false) || "both";
           const limit = Math.max(1, Math.min(numArg(args, "limit", 80), 500));
           const offset = Math.max(0, numArg(args, "offset", 0));
-          const files = this.snapshotRepo.listFiles(snapshotId, undefined, 10_000);
+          const files = this.snapshotRepo.listFiles(snapshotId, undefined, 15_000);
           const results: Array<Record<string, unknown>> = [];
           let totalMatches = 0;
 
@@ -8177,7 +8183,7 @@ export class OrbitCommandPalette {
         case "settings.get": {
           const snapshotId = this.requireSnapshotId(parsed, args);
           const area = strArg(args, "area", false) || "project";
-          const files = this.snapshotRepo.listFiles(snapshotId, undefined, 10_000);
+          const files = this.snapshotRepo.listFiles(snapshotId, undefined, 15_000);
           const tokens: Record<string, string[]> = {
             theme: ["theme", "style"],
             appState: ["app_state", "appstate", "state"],
@@ -8251,7 +8257,7 @@ export class OrbitCommandPalette {
 
         case "summarize.project": {
           const snapshotId = this.requireSnapshotId(parsed, args);
-          const files = this.snapshotRepo.listFiles(snapshotId, undefined, 10_000);
+          const files = this.snapshotRepo.listFiles(snapshotId, undefined, 15_000);
           const symbols = this.indexRepo.listSymbols(snapshotId);
           return this.ok(parsed.cmd, {
             snapshotId,
@@ -9007,7 +9013,7 @@ export class OrbitCommandPalette {
         this.snapshotRepo.setVersionInfo(snapshotId, session.versionInfo);
       }
       this.snapshotRepo.touchSnapshot(snapshotId);
-      await this.reindex(snapshotId);
+      // Skip intermediate reindex — only reindex when all chunks are done
     }
 
     const remoteCanonicalKeys = new Set(session.remoteKeys.map((key) => this.canonicalFileKey(key)));
@@ -9261,7 +9267,7 @@ export class OrbitCommandPalette {
 
   private async reindex(snapshotId: string): Promise<void> {
     const files = this.snapshotRepo
-      .listFiles(snapshotId, undefined, 10_000)
+      .listFiles(snapshotId, undefined, 15_000)
       .map((file) => ({ fileKey: file.fileKey, yaml: file.yaml }));
     const indices = extractSnapshotIndex(snapshotId, files);
     this.indexRepo.replaceSnapshotIndices(snapshotId, indices.symbols, indices.edges);

@@ -32,7 +32,7 @@ async function main(): Promise<void> {
 
   const reindexSnapshot = async (snapshotId: string): Promise<void> => {
     const files = snapshotRepo
-      .listFiles(snapshotId, undefined, 10_000)
+      .listFiles(snapshotId, undefined, 15_000)
       .map((file) => ({ fileKey: file.fileKey, yaml: file.yaml }));
     const extracted = extractSnapshotIndex(snapshotId, files);
     indexRepo.replaceSnapshotIndices(snapshotId, extracted.symbols, extracted.edges);

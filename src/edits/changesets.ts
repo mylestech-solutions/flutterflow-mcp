@@ -375,15 +375,19 @@ export class ChangesetService {
 
     const remoteValidate = options?.remoteValidate !== false;
     if (remoteValidate) {
-      for (const update of materialized.updates) {
-        const remoteValidation = await this.adapter.remoteValidate(update.yaml, snapshot.projectId, update.fileKey);
-        if (!remoteValidation.ok) {
-          return {
-            applied: false,
-            reason: `Remote validation failed for ${update.fileKey}: ${remoteValidation.message ?? "Unknown error"}`,
-            preview: materialized.preview
-          };
-        }
+      const validationResults = await Promise.all(
+        materialized.updates.map(async (update) => ({
+          fileKey: update.fileKey,
+          result: await this.adapter.remoteValidate(update.yaml, snapshot.projectId, update.fileKey)
+        }))
+      );
+      const failed = validationResults.find((v) => !v.result.ok);
+      if (failed) {
+        return {
+          applied: false,
+          reason: `Remote validation failed for ${failed.fileKey}: ${failed.result.message ?? "Unknown error"}`,
+          preview: materialized.preview
+        };
       }
     }
 
@@ -500,8 +504,11 @@ export class ChangesetService {
     const fileDiffs: PreviewFileDiff[] = [];
     const updates: FileUpdate[] = [];
 
+    const fileKeys = [...byFile.keys()];
+    const batchFiles = this.snapshotRepo.getFiles(changeset.snapshot_id, fileKeys);
+
     for (const [fileKey, patches] of byFile.entries()) {
-      const file = this.snapshotRepo.getFile(changeset.snapshot_id, fileKey);
+      const file = batchFiles.get(fileKey);
       const isCreateViaReplaceRange =
         !file &&
         patches.every((patch) => patch.type === "replace-range" && patch.start === 0 && patch.end === 0);
