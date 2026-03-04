@@ -308,6 +308,16 @@ env = { FLUTTERFLOW_API_TOKEN = "YOUR_TOKEN" }
 enabled = true
 ```
 
+## Install the Orbit Skill (Recommended)
+
+The skill teaches every Claude session about all 60+ Orbit commands automatically:
+
+```bash
+cp -r skills/flutterflow-orbit ~/.claude/skills/
+```
+
+After restart, Claude will know all Orbit commands, workflows, and your project setup in every session.
+
 ## Agent Rule Pack
 
 This repository now includes a clone-ready rule/setup pack for agents:
