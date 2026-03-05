@@ -28,15 +28,22 @@ export function defaultPolicyPath(): string {
   return policyPath();
 }
 
+function stripUndefined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result as Partial<T>;
+}
+
 export function mergePolicy(filePolicy: Partial<OrbitPolicy>, envPolicy: Partial<OrbitPolicy>): OrbitPolicy {
+  const cleanFile = stripUndefined(filePolicy);
+  const cleanEnv = stripUndefined(envPolicy);
   return {
     ...DEFAULT_POLICY,
-    ...filePolicy,
-    ...envPolicy,
-    allowProjects: envPolicy.allowProjects ?? filePolicy.allowProjects ?? DEFAULT_POLICY.allowProjects,
-    allowFileKeyPrefixes:
-      envPolicy.allowFileKeyPrefixes ?? filePolicy.allowFileKeyPrefixes ?? DEFAULT_POLICY.allowFileKeyPrefixes,
-    denyFileKeyPrefixes:
-      envPolicy.denyFileKeyPrefixes ?? filePolicy.denyFileKeyPrefixes ?? DEFAULT_POLICY.denyFileKeyPrefixes
+    ...cleanFile,
+    ...cleanEnv
   };
 }
